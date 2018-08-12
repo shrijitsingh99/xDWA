@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from networkx.drawing.nx_agraph import write_dot, graphviz_layout
 from TrajectorySimulator import TrajectorySimulator
 from SampleGenerator import SampleGenerator
+import copy
 
 
 class TrajectoryGraph(nx.DiGraph):
@@ -21,12 +22,12 @@ class TrajectoryGraph(nx.DiGraph):
         return self
 
     def add_trajectory(self, robot, parent_node_num, depth):
-        if depth is self.depth:
+        if depth == self.depth:
             return
 
         trajectories = self.generate_trajectory(robot)
 
-        for trajectory in self.best_trajectory(trajectories, (3 - depth)):
+        for trajectory in self.best_trajectory(trajectories, 4):
             new_robot = Robot(trajectory.poses[-1].x, trajectory.poses[-1].y, trajectory.poses[-1].theta,
                               trajectory.velocity.x, trajectory.velocity.theta, robot.max_accel[0], robot.max_accel[1])
             self.node_num += 1
@@ -51,7 +52,7 @@ class TrajectoryGraph(nx.DiGraph):
         return final_path
 
     def generate_trajectory(self, robot):
-        generator = SampleGenerator(robot, timestep=0.1, resolution_x=0.1, resolution_theta=0.1)
+        generator = SampleGenerator(robot, timestep=0.1, resolution_x=0.05, resolution_theta=0.05)
         vel_samples = generator.generate()
         simulator = TrajectorySimulator(time=4, timestep=0.1)
         trajectories = []
@@ -71,10 +72,12 @@ class TrajectoryGraph(nx.DiGraph):
         # print("best vels:", trajectories[1].velocity.x, trajectories[2].velocity.theta)
         trajectory_list = []
         best_trajectories = []
+        vis_costmap = copy.deepcopy(self.costmap)
         for trajectory in trajectories:
             cost = trajectory.score(self.costmap)
             trajectory_list.append((cost, trajectory))
-            # trajectory.visualize(self.costmap, 10)
+            trajectory.visualize(vis_costmap, 10)
+        vis_costmap.visualize()
         for i in range(0, num_best_traj):
             min_cost_trajectory = min(trajectory_list, key=lambda t: t[0])
             best_trajectories.append(min_cost_trajectory[1])

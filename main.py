@@ -12,7 +12,7 @@ if __name__ == "__main__":
     for i in range(0, 3):
         trajectory_graph = TrajectoryGraph(costmap, depth=1)
         trajectory_graph.build_graph(robot)
-        trajectory_graph.draw_graph()
+        # trajectory_graph.draw_graph()
         final_path = trajectory_graph.final_trajectory()
         i = 0
         for trajectory in final_path:
