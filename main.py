@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
         for x in range(int(math.floor(robot.pose.x)), int(math.floor(robot.pose.x) + 5)):
             for y in range(int(math.floor(robot.pose.y)), int(math.floor(robot.pose.y) + 5)):
-                visual_costmap.map[x][y] = 100
+                visual_costmap.set_cell(x, y, 100)
     visual_costmap.display()
 
 

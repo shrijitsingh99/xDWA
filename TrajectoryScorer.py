@@ -26,7 +26,7 @@ class TrajectoryScorer:
         # obstacle_dist_cost = self.obstacle_dist_cost(trajectory)
         global_path_cost = self.global_path_cost(trajectory)
         # Computing combined
-        print(costmap_cost*100, global_path_cost)
+        #print(costmap_cost*100, global_path_cost)
         cost = costmap_cost*100 + global_path_cost
 
         trajectory.cost = cost
@@ -40,8 +40,13 @@ class TrajectoryScorer:
         for pose in trajectory.poses:
             position = (math.floor(pose.x / self.costmap.resolution), math.floor(pose.y / self.costmap.resolution))
             if prev_pos != position:
-                cost += self.costmap.map[position[0]][position[1]]
-            prev_pos = position
+                cell_cost = self.costmap.get_cell(*position)
+                if cell_cost is None:
+                    cost += self.costmap.get_cell(*prev_pos)
+                else:
+                    cost += cell_cost
+                    prev_pos = position
+
         return cost
 
     def obstacle_dist_cost(self, trajectory):
@@ -62,19 +67,29 @@ class TrajectoryScorer:
 
     def global_path_cost(self, trajectory):
         cost = []
+        next_global_pose = 0
         for pose in trajectory.poses:
+
             min_dist = 1e5
-            for global_pose in self.global_path.poses:
+            max_dist = 1e-5
+            for idx in range(0, len(self.global_path.poses)):
+                global_pose = self.global_path.poses[idx]
                 dist = TrajectoryScorer.distance(pose, global_pose)
-                if dist < min_dist:
+                if min_dist > dist:
                     min_dist = dist
+                    next_global_pose = idx
+
+                if max_dist < dist:
+                    max_dist = dist
+                    next_global_pose = idx
+
             cost.append(min_dist)
 
-        return sum(cost)
+        return sum(cost)/len(trajectory.poses)
 
     @staticmethod
     def distance(pose1, pose2):
-        return math.sqrt((pose1.x - pose2.x)**2 + (pose1.y - pose2.y)**2)
+        return ((math.fabs(pose1.x - pose2.x))**0.5 + (math.fabs(pose1.y - pose2.y))**0.5) ** 2.0
 
     def best_trajectory(self, trajectories, num_best_traj):
         trajectory_list = []

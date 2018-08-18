@@ -27,9 +27,8 @@ class Costmap:
             for y in range(50, 75):
                 self.map[x][y] = 80
 
-        #  Global Path
-        # for x in range(0, 230):
-        #         self.map[-x][x] = 100
+        for x in range(0, 230):
+                self.map[-x][x] = 100
 
         self.obstacles = [(125, 162.5), (162.5, 112.5), (45, 162.5), (87.5, 112.5), (87.5, 62.5)]
         self.y = size_y
@@ -39,3 +38,14 @@ class Costmap:
     def display(self):
         plt.imshow(self.map)
         plt.show()
+
+    def get_cell(self, x, y):
+        if x >= self.x or y >= self.y or x < -self.x or y < -self.y:
+            return None
+        return self.map[x][y]
+
+    def set_cell(self, x, y, val):
+        if x >= self.x or y >= self.y or x < -self.x or y < -self.y:
+            return
+        self.map[x][y] = val
+

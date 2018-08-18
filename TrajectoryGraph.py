@@ -60,7 +60,7 @@ class TrajectoryGraph(nx.DiGraph):
         min_cost_path = nx.dijkstra_path(self, 0, minimum_cost_leaf[0])
         del min_cost_path[0]
         final_path = []
-        print(min_cost_path)
+        #print(min_cost_path)
         for path in min_cost_path:
             final_path.append(self.nodes[path]["trajectory"])
         return final_path

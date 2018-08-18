@@ -15,17 +15,17 @@ class SampleGenerator:
 
     def generate(self):
         x_vels = np.arange((self.current_vel_x - self.max_accel_x * self.timestep),\
-                            (self.current_vel_x + self.max_accel_x * self.timestep),\
+                            (self.current_vel_x + self.max_accel_x * self.timestep + self.resolution_x),\
                             self.resolution_x)
         theta_vels = np.arange((self.current_vel_theta - self.max_accel_theta * self.timestep),\
-                            (self.current_vel_theta + self.max_accel_theta * self.timestep),\
+                            (self.current_vel_theta + self.max_accel_theta * self.timestep + self.resolution_theta),\
                             self.resolution_theta)
         vel_samples = []
         for x_vel in x_vels:
             for theta_vel in theta_vels:
-                vel_samples.append(Velocity(x_vel, theta_vel))
+                vel_samples.append(Velocity(x_vel, theta_vel*20))
         np.random.shuffle(vel_samples)
-
+        print("Generated vals:", vel_samples)
         return vel_samples
 
 

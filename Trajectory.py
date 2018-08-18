@@ -30,9 +30,6 @@ class Trajectory:
     def visualize(self, costmap, i, display=False):
             for pose in self.poses:
                 position = (math.floor(pose.x / costmap.resolution), math.floor(pose.y / costmap.resolution))
-                costmap.map[position[0]][position[1]] = (i + 1)*100
+                costmap.set_cell(*position, (i+1)*100)
                 if display:
                     costmap.visualize()
-
-
-
