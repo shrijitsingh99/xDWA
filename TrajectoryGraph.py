@@ -6,6 +6,8 @@ from networkx.drawing.nx_agraph import write_dot, graphviz_layout
 from TrajectorySimulator import TrajectorySimulator
 from SampleGenerator import SampleGenerator
 import copy
+from TrajectoryScorer import TrajectoryScorer
+import os
 
 
 class TrajectoryGraph(nx.DiGraph):
@@ -25,9 +27,11 @@ class TrajectoryGraph(nx.DiGraph):
         if depth == self.depth:
             return
 
-        trajectories = self.generate_trajectory(robot)
+        trajectories = Trajectory.generate_trajectories(robot)
 
-        for trajectory in self.best_trajectory(trajectories, 4):
+        scorer = TrajectoryScorer(self.costmap)
+
+        for trajectory in scorer.best_trajectory(trajectories, int(os.environ.get("BEST_TRAJECTORIES"))):
             new_robot = Robot(trajectory.poses[-1].x, trajectory.poses[-1].y, trajectory.poses[-1].theta,
                               trajectory.velocity.x, trajectory.velocity.theta, robot.max_accel[0], robot.max_accel[1])
             self.node_num += 1
@@ -35,6 +39,16 @@ class TrajectoryGraph(nx.DiGraph):
             self.add_edge(parent_node_num, self.node_num, weight=trajectory.cost)
             self.add_trajectory(robot=new_robot, parent_node_num=self.node_num,
                              depth=(depth + 1))
+
+
+    def draw_graph(self):
+        plt.title('Trajectory Graph')
+        pos = graphviz_layout(self, prog='dot')
+        nx.draw(self, pos, with_labels=True, arrows=True)
+        edge_labels = nx.get_edge_attributes(self, 'state')
+        nx.draw_networkx_edge_labels(self, pos, labels=edge_labels)
+        plt.show()
+
 
     def final_trajectory(self):
         leaves = [x for x in self.nodes() if self.out_degree(x) == 0 and self.in_degree(x) == 1]
@@ -50,36 +64,3 @@ class TrajectoryGraph(nx.DiGraph):
         for path in min_cost_path:
             final_path.append(self.nodes[path]["trajectory"])
         return final_path
-
-    def generate_trajectory(self, robot):
-        generator = SampleGenerator(robot, timestep=0.1, resolution_x=0.05, resolution_theta=0.05)
-        vel_samples = generator.generate()
-        simulator = TrajectorySimulator(time=4, timestep=0.1)
-        trajectories = []
-        for vel in vel_samples:
-            trajectories.append(simulator.simulate_trajectory(robot, vel.x, vel.theta))
-        return trajectories
-
-    def draw_graph(self):
-        plt.title('Trajectory Graph')
-        pos = graphviz_layout(self, prog='dot')
-        nx.draw(self, pos, with_labels=True, arrows=True)
-        edge_labels = nx.get_edge_attributes(self, 'state')
-        nx.draw_networkx_edge_labels(self, pos, labels=edge_labels)
-        plt.show()
-
-    def best_trajectory(self, trajectories, num_best_traj):
-        # print("best vels:", trajectories[1].velocity.x, trajectories[2].velocity.theta)
-        trajectory_list = []
-        best_trajectories = []
-        vis_costmap = copy.deepcopy(self.costmap)
-        for trajectory in trajectories:
-            cost = trajectory.score(self.costmap)
-            trajectory_list.append((cost, trajectory))
-            trajectory.visualize(vis_costmap, 10)
-        vis_costmap.visualize()
-        for i in range(0, num_best_traj):
-            min_cost_trajectory = min(trajectory_list, key=lambda t: t[0])
-            best_trajectories.append(min_cost_trajectory[1])
-            trajectory_list.remove(min_cost_trajectory)
-        return best_trajectories

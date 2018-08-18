@@ -1,10 +1,11 @@
-import numpy as np
 import math
 from Pose import Pose
-from Trajectory import Trajectory
 from Velocity import Velocity
+import Trajectory as traj
+
 
 class TrajectorySimulator:
+
     def __init__(self, time, timestep):
         self.time = time
         self.timestep = timestep
@@ -18,4 +19,4 @@ class TrajectorySimulator:
             current_pose[2] += vtheta * self.timestep
             new_pose = Pose(current_pose[0], current_pose[1], current_pose[2])
             poses.append(new_pose)
-        return Trajectory(poses=poses, velocity=Velocity(vx, vtheta), cost=0)
+        return traj.Trajectory(poses=poses, velocity=Velocity(vx, vtheta), cost=0)

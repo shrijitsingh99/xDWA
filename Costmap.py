@@ -7,17 +7,35 @@ class Costmap:
         # y_cordinates = np.random.randint(0, 100, size=500)
 
         self.map = np.zeros((size_x, size_y))
-        for x in range(75, 100):
+        for x in range(100, 150):
             for y in range(150, 175):
                 self.map[x][y] = 80
 
         for x in range(20, 70):
             for y in range(150, 175):
                 self.map[x][y] = 80
+
+        for x in range(150, 175):
+            for y in range(100, 125):
+                self.map[x][y] = 80
+
+        for x in range(75, 100):
+            for y in range(100, 125):
+                self.map[x][y] = 80
+
+        for x in range(75, 100):
+            for y in range(50, 75):
+                self.map[x][y] = 80
+
+        #  Global Path
+        # for x in range(0, 230):
+        #         self.map[-x][x] = 100
+
+        self.obstacles = [(125, 162.5), (162.5, 112.5), (45, 162.5), (87.5, 112.5), (87.5, 62.5)]
         self.y = size_y
         self.x = size_x
         self.resolution = resolution
 
-    def visualize(self):
+    def display(self):
         plt.imshow(self.map)
         plt.show()
