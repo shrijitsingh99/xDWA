@@ -2,10 +2,7 @@ import networkx as nx
 from Trajectory import Trajectory
 from Robot import Robot
 import matplotlib.pyplot as plt
-from networkx.drawing.nx_agraph import write_dot, graphviz_layout
-from TrajectorySimulator import TrajectorySimulator
-from SampleGenerator import SampleGenerator
-import copy
+from networkx.drawing.nx_agraph import graphviz_layout
 from TrajectoryScorer import TrajectoryScorer
 import os
 
@@ -40,7 +37,6 @@ class TrajectoryGraph(nx.DiGraph):
             self.add_trajectory(robot=new_robot, parent_node_num=self.node_num,
                              depth=(depth + 1))
 
-
     def draw_graph(self):
         plt.title('Trajectory Graph')
         pos = graphviz_layout(self, prog='dot')
@@ -48,7 +44,6 @@ class TrajectoryGraph(nx.DiGraph):
         edge_labels = nx.get_edge_attributes(self, 'state')
         nx.draw_networkx_edge_labels(self, pos, labels=edge_labels)
         plt.show()
-
 
     def final_trajectory(self):
         leaves = [x for x in self.nodes() if self.out_degree(x) == 0 and self.in_degree(x) == 1]
@@ -60,7 +55,6 @@ class TrajectoryGraph(nx.DiGraph):
         min_cost_path = nx.dijkstra_path(self, 0, minimum_cost_leaf[0])
         del min_cost_path[0]
         final_path = []
-        #print(min_cost_path)
         for path in min_cost_path:
             final_path.append(self.nodes[path]["trajectory"])
         return final_path

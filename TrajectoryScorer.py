@@ -8,27 +8,18 @@ from Pose import Pose
 
 
 class TrajectoryScorer:
-
     def __init__(self, costmap):
         self.costmap = costmap
-
-        # Generate global path
         poses = []
         for x in range(costmap.x):
-            poses.append(Pose(-x, x))
+            poses.append(Pose(x, x))
         self.global_path = GlobalPath(poses)
 
     def trajectory_cost(self, trajectory):
-        cost = 0
-
-        # Trajectory cost scoring function
         costmap_cost = self.costmap_cost(trajectory)
         # obstacle_dist_cost = self.obstacle_dist_cost(trajectory)
         global_path_cost = self.global_path_cost(trajectory)
-        # Computing combined
-        #print(costmap_cost*100, global_path_cost)
-        cost = costmap_cost*100 + global_path_cost
-
+        cost = costmap_cost + global_path_cost
         trajectory.cost = cost
         self.obstacle_dist_cost(trajectory)
 
@@ -36,18 +27,21 @@ class TrajectoryScorer:
 
     def costmap_cost(self, trajectory):
         cost = 0
-        prev_pos = (-1, -1)
+        prev_pos = (115, 115)
+        # TODO (squadrick): prev_pos should be Robot's starting x and y
         for pose in trajectory.poses:
+            pose_cell = 1
             position = (math.floor(pose.x / self.costmap.resolution), math.floor(pose.y / self.costmap.resolution))
             if prev_pos != position:
+                pose_cell += 1
                 cell_cost = self.costmap.get_cell(*position)
                 if cell_cost is None:
-                    cost += self.costmap.get_cell(*prev_pos)
+                    cost += 999
                 else:
                     cost += cell_cost
                     prev_pos = position
 
-        return cost
+        return cost/pose_cell
 
     def obstacle_dist_cost(self, trajectory):
         mid = len(trajectory.poses)
@@ -67,29 +61,26 @@ class TrajectoryScorer:
 
     def global_path_cost(self, trajectory):
         cost = []
-        next_global_pose = 0
         for pose in trajectory.poses:
-
             min_dist = 1e5
             max_dist = 1e-5
-            for idx in range(0, len(self.global_path.poses)):
-                global_pose = self.global_path.poses[idx]
+            avg_dist = 0
+            for global_pose in self.global_path.poses:
                 dist = TrajectoryScorer.distance(pose, global_pose)
-                if min_dist > dist:
-                    min_dist = dist
-                    next_global_pose = idx
+                min_dist = min(min_dist, dist)
+                max_dist = max(max_dist, dist)
+                avg_dist += dist
 
-                if max_dist < dist:
-                    max_dist = dist
-                    next_global_pose = idx
+            avg_dist /= len(self.global_path.poses)
+            cost.append(avg_dist)
 
-            cost.append(min_dist)
-
-        return sum(cost)/len(trajectory.poses)
+        return sum(cost)#/len(trajectory.poses)
 
     @staticmethod
     def distance(pose1, pose2):
+        # TODO (shrijit99): For grids with lower res, manhattan distance coverges faster. For higher res, use euclidean.
         return ((math.fabs(pose1.x - pose2.x))**0.5 + (math.fabs(pose1.y - pose2.y))**0.5) ** 2.0
+        # return math.fabs(math.fabs(pose1.x - pose2.x) + math.fabs(pose2.y - pose1.y))
 
     def best_trajectory(self, trajectories, num_best_traj):
         trajectory_list = []

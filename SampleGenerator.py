@@ -23,9 +23,8 @@ class SampleGenerator:
         vel_samples = []
         for x_vel in x_vels:
             for theta_vel in theta_vels:
-                vel_samples.append(Velocity(x_vel, theta_vel*20))
+                vel_samples.append(Velocity(x_vel, theta_vel))
         np.random.shuffle(vel_samples)
-        print("Generated vals:", vel_samples)
         return vel_samples
 
 
