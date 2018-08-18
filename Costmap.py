@@ -37,15 +37,17 @@ class Costmap:
 
     def display(self):
         plt.imshow(self.map)
-        plt.show()
+        # plt.show()
+        plt.pause(0.1)
+        plt.close()
 
     def get_cell(self, x, y):
-        if x >= self.x or y >= self.y or x < -self.x or y < -self.y:
+        if x >= self.x or y >= self.y or x < 0 or y < 0:
             return None
         return self.map[x][y]
 
     def set_cell(self, x, y, val):
-        if x >= self.x or y >= self.y or x < -self.x or y < -self.y:
+        if x >= self.x or y >= self.y or x < 0 or y < 0:
             return
         self.map[x][y] = val
 
