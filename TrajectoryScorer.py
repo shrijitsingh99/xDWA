@@ -16,48 +16,45 @@ class TrajectoryScorer:
         self.global_path = GlobalPath(poses)
 
     def trajectory_cost(self, trajectory):
-        costmap_cost = self.costmap_cost(trajectory)
-        # obstacle_dist_cost = self.obstacle_dist_cost(trajectory)
-        global_path_cost = self.global_path_cost(trajectory)
-        cost = costmap_cost + global_path_cost
+        costmap_cost = self.costmap_cost(trajectory) + 1
+        obstacle_dist_cost = self.obstacle_dist_cost(trajectory) + 1
+        global_path_cost = self.global_path_cost(trajectory) + 1
+        # twirling_cost = self.twirling_cost(trajectory) + 1
+        goal_cost = self.goal_cost(trajectory) + 1
+        # print(goal_cost)
+        cost = costmap_cost * (goal_cost**3) * global_path_cost
         trajectory.cost = cost
-        self.obstacle_dist_cost(trajectory)
-
         return cost
 
     def costmap_cost(self, trajectory):
         cost = 0
-        prev_pos = (115, 115)
+        # prev_pos = (0, 0)
         # TODO (squadrick): prev_pos should be Robot's starting x and y
         for pose in trajectory.poses:
-            pose_cell = 1
             position = (math.floor(pose.x / self.costmap.resolution), math.floor(pose.y / self.costmap.resolution))
-            if prev_pos != position:
-                pose_cell += 1
-                cell_cost = self.costmap.get_cell(*position)
-                if cell_cost is None:
-                    cost += 999
-                else:
-                    cost += cell_cost
-                    prev_pos = position
-
-        return cost/pose_cell
+            # if prev_pos != position:
+            cell_cost = self.costmap.get_cell(*position)
+            if cell_cost is None:
+                cost += 999
+            else:
+                cost += cell_cost
+                # prev_pos = position
+        return cost
 
     def obstacle_dist_cost(self, trajectory):
         mid = len(trajectory.poses)
         mid_pose = trajectory.poses[int(mid / 2)]
         dist = []
         for obstacle in self.costmap.obstacles:
-            dist.append(math.sqrt(math.fabs(((mid_pose.x - obstacle[0])**2) - ((mid_pose.y - obstacle[1])**2))))
+            obs_dist = math.sqrt(math.fabs(((mid_pose.x - obstacle[0])**2) - ((mid_pose.y - obstacle[1])**2)))
+            if obs_dist <= 15:
+                dist.append(obs_dist)
+        cost = 0
+        if len(dist) > 0:
+            cost = sum(dist)/len(dist)
+        cost += 1
 
-        closes_dist = 0
-
-        for i in range(0, 3):
-            min_dist = min(dist)
-            closes_dist += (-min_dist)
-            dist.remove(min_dist)
-
-        return closes_dist
+        return 1/cost
 
     def global_path_cost(self, trajectory):
         cost = []
@@ -74,30 +71,45 @@ class TrajectoryScorer:
             avg_dist /= len(self.global_path.poses)
             cost.append(avg_dist)
 
-        return sum(cost)#/len(trajectory.poses)
+        return sum(cost)/len(trajectory.poses)
+
+    def twirling_cost(self, trajectory):
+        return math.fabs(trajectory.velocity.theta)
+
+    def goal_cost(self, trajectory):
+        return TrajectoryScorer.distance(trajectory.poses[-1], Pose(220, 220, 0))
 
     @staticmethod
     def distance(pose1, pose2):
-        # TODO (shrijit99): For grids with lower res, manhattan distance coverges faster. For higher res, use euclidean.
-        return ((math.fabs(pose1.x - pose2.x))**0.5 + (math.fabs(pose1.y - pose2.y))**0.5) ** 2.0
+        # TODO (shrijitsingh99): For grids with lower res, manhattan distance coverges faster. For higher res, use euclidean.
+        return ((math.fabs(pose1.x - pose2.x))**2 + (math.fabs(pose1.y - pose2.y))**2) ** 0.5
         # return math.fabs(math.fabs(pose1.x - pose2.x) + math.fabs(pose2.y - pose1.y))
 
-    def best_trajectory(self, trajectories, num_best_traj):
+    def best_trajectory(self, trajectories, num_best_traj, depth):
         trajectory_list = []
         best_trajectories = []
+        cost_diff = []
         for trajectory in trajectories:
             cost = trajectory.score(self.costmap)
+            
             trajectory_list.append((cost, trajectory))
 
         if int(os.environ.get("DISPLAY_PATH_SEARCH")):
             vis_costmap = copy.deepcopy(self.costmap)
             for trajectory in trajectories:
-                trajectory.visualize(vis_costmap, 10)
+                trajectory.visualize(vis_costmap, (depth + 1)*50)
             vis_costmap.display()
-
-        for i in range(0, num_best_traj):
+        prev_min_cost = -1
+        for i in range(0, len(trajectories)):
+            if num_best_traj == 0:
+                break
             min_cost_trajectory = min(trajectory_list, key=lambda t: t[0])
-            best_trajectories.append(min_cost_trajectory[1])
-            trajectory_list.remove(min_cost_trajectory)
+            if math.fabs(prev_min_cost - min_cost_trajectory[0]) < 1000:
+                trajectory_list.remove(min_cost_trajectory)
+                continue
 
+            best_trajectories.append(min_cost_trajectory[1])
+            num_best_traj -=1
+            prev_min_cost = min_cost_trajectory[0]
+            trajectory_list.remove(min_cost_trajectory)
         return best_trajectories

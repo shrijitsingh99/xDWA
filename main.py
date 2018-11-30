@@ -11,9 +11,10 @@ import os
 if __name__ == "__main__":
     costmap = Costmap(230, 230, 1)
     visual_costmap = copy.deepcopy(costmap)
-    robot = Robot(x=60, y=110, theta=0, current_vel_x=5, current_vel_theta=0, max_accel_x=5, max_accel_theta=4)
+    robot = Robot(x=10, y=10, theta=0, current_vel_x=5, current_vel_theta=0, max_accel_x=5, max_accel_theta=1)
 
     for i in range(int(os.environ.get("NUMBER_OF_STEPS"))):
+        print("Step: ", i)
         trajectory_graph = TrajectoryGraph(costmap, depth=int(os.environ.get("SEARCH_DEPTH")))
         trajectory_graph.build_graph(robot)
 

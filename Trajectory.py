@@ -17,10 +17,13 @@ class Trajectory:
         return scorer.trajectory_cost(self)
 
     @classmethod
-    def generate_trajectories(cls, robot):
-        generator = SampleGenerator(robot, timestep=0.1, resolution_x=0.05, resolution_theta=0.05)
+    def generate_trajectories(cls, robot, costmap, depth):
+        if depth == 0:
+            generator = SampleGenerator(robot, timestep=0.1, resolution_x=0.1, resolution_theta=0.1)
+        else:
+            generator = SampleGenerator(robot, timestep=0.5, resolution_x=0.4, resolution_theta=0.2)
         vel_samples = generator.generate()
-        simulator = TrajectorySimulator(time=3, timestep=0.1)
+        simulator = TrajectorySimulator(time=4, timestep=0.1, costmap=costmap)
         trajectories = []
         for vel in vel_samples:
             trajectories.append(simulator.simulate_trajectory(robot, vel.x, vel.theta))
@@ -30,6 +33,6 @@ class Trajectory:
     def visualize(self, costmap, i, display=False):
             for pose in self.poses:
                 position = (math.floor(pose.x / costmap.resolution), math.floor(pose.y / costmap.resolution))
-                costmap.set_cell(*position, (i+1)*100)
+                costmap.set_cell(*position, (i+1))
                 if display:
                     costmap.visualize()

@@ -10,3 +10,6 @@ Decrease resolution and increase span area at every step
 increase sim time at every step
 Add cost scoring from center of obstacle
 add buffers for best trajectories, the buffers will be randomly sample and will be away from best trajectories and have less simlarity to the best trajectories
+
+At each depth make sure the best trajectories being generated are different from each other else they end up being very similar
+For xDWA increase the sample generator timestep

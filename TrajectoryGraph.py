@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from networkx.drawing.nx_agraph import graphviz_layout
 from TrajectoryScorer import TrajectoryScorer
 import os
+import math
 
 
 class TrajectoryGraph(nx.DiGraph):
@@ -24,18 +25,17 @@ class TrajectoryGraph(nx.DiGraph):
         if depth == self.depth:
             return
 
-        trajectories = Trajectory.generate_trajectories(robot)
+        trajectories = Trajectory.generate_trajectories(robot, self.costmap, depth)
 
         scorer = TrajectoryScorer(self.costmap)
-
-        for trajectory in scorer.best_trajectory(trajectories, int(os.environ.get("BEST_TRAJECTORIES"))):
+        best_trajectories = scorer.best_trajectory(trajectories, (int(os.environ.get("BEST_TRAJECTORIES"))), depth)
+        for trajectory in best_trajectories:
             new_robot = Robot(trajectory.poses[-1].x, trajectory.poses[-1].y, trajectory.poses[-1].theta,
                               trajectory.velocity.x, trajectory.velocity.theta, robot.max_accel[0], robot.max_accel[1])
             self.node_num += 1
             self.add_node(self.node_num, trajectory=trajectory)
             self.add_edge(parent_node_num, self.node_num, weight=trajectory.cost)
-            self.add_trajectory(robot=new_robot, parent_node_num=self.node_num,
-                             depth=(depth + 1))
+            self.add_trajectory(robot=new_robot, parent_node_num=self.node_num, depth=(depth + 1))
 
     def draw_graph(self):
         plt.title('Trajectory Graph')
