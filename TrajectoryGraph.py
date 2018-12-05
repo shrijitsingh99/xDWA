@@ -6,6 +6,8 @@ from networkx.drawing.nx_agraph import graphviz_layout
 from TrajectoryScorer import TrajectoryScorer
 import os
 import math
+import queue
+import Pose
 
 
 class TrajectoryGraph(nx.DiGraph):
@@ -13,12 +15,26 @@ class TrajectoryGraph(nx.DiGraph):
         self.node_num = node_num
         self.costmap = costmap
         self.depth = depth
+        self.myqueue = queue.Queue()
         super().__init__()
 
     def build_graph(self, robot):
-        root_trajectory = Trajectory(poses=None, velocity=robot.velocity)
-        self.add_node(self.node_num, trajectory=root_trajectory)
-        self.add_trajectory(robot=robot, parent_node_num=0, depth=0)
+        root_trajectory = Trajectory(poses=[robot.pose], velocity=robot.velocity)
+        self.myqueue.put((self.node_num, root_trajectory))
+        scorer = TrajectoryScorer(self.costmap)
+
+        while(not self.myqueue.empty() and self.node_num <= (int(os.environ.get("SEARCH_DEPTH"))**(int(os.environ.get("BEST_TRAJECTORIES"))+1)) - 1 ):
+            parent_node_num, trajectory = self.myqueue.get()
+            new_robot = Robot(trajectory.poses[-1].x, trajectory.poses[-1].y, trajectory.poses[-1].theta,
+                              trajectory.velocity.x, trajectory.velocity.theta, robot.max_accel[0], robot.max_accel[1])
+            trajectories = Trajectory.generate_trajectories(new_robot, self.costmap, 0)
+            best_trajectories = scorer.best_trajectory(trajectories, (int(os.environ.get("BEST_TRAJECTORIES"))), 0)
+            for traj in best_trajectories:
+                self.node_num += 1
+                self.add_node(self.node_num, trajectory=traj)
+                self.add_edge(parent_node_num, self.node_num, weight=trajectory.cost)
+                self.myqueue.put((self.node_num, traj))
+
         return self
 
     def add_trajectory(self, robot, parent_node_num, depth):

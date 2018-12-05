@@ -11,18 +11,23 @@ class TrajectoryScorer:
     def __init__(self, costmap):
         self.costmap = costmap
         poses = []
-        for x in range(costmap.x):
-            poses.append(Pose(x, x))
+        for x in range(0, 130):
+            poses.append(Pose(x/3, x))
+        for x in range(43, 200):
+            poses.append(Pose(x, 120+x/5))
+
+        # for x in range(costmap.x):
+        #     poses.append(Pose(x, x))
+
         self.global_path = GlobalPath(poses)
 
     def trajectory_cost(self, trajectory):
         costmap_cost = self.costmap_cost(trajectory) + 1
         obstacle_dist_cost = self.obstacle_dist_cost(trajectory) + 1
         global_path_cost = self.global_path_cost(trajectory) + 1
-        # twirling_cost = self.twirling_cost(trajectory) + 1
+        twirling_cost = self.twirling_cost(trajectory) + 1
         goal_cost = self.goal_cost(trajectory) + 1
-        # print(goal_cost)
-        cost = costmap_cost * (goal_cost**3) * global_path_cost
+        cost = 100*(100*costmap_cost + 5 * global_path_cost+ goal_cost)
         trajectory.cost = cost
         return cost
 
@@ -58,26 +63,21 @@ class TrajectoryScorer:
 
     def global_path_cost(self, trajectory):
         cost = []
+        avg_dist = 0
         for pose in trajectory.poses:
-            min_dist = 1e5
-            max_dist = 1e-5
-            avg_dist = 0
+            min_dist = 1e10
             for global_pose in self.global_path.poses:
-                dist = TrajectoryScorer.distance(pose, global_pose)
-                min_dist = min(min_dist, dist)
-                max_dist = max(max_dist, dist)
-                avg_dist += dist
-
-            avg_dist /= len(self.global_path.poses)
-            cost.append(avg_dist)
-
+                min_dist = min(min_dist, TrajectoryScorer.distance(pose, global_pose))
+            avg_dist += min_dist**2.5
+        avg_dist /= len(self.global_path.poses)
+        cost.append(avg_dist)
         return sum(cost)/len(trajectory.poses)
 
     def twirling_cost(self, trajectory):
         return math.fabs(trajectory.velocity.theta)
 
     def goal_cost(self, trajectory):
-        return TrajectoryScorer.distance(trajectory.poses[-1], Pose(220, 220, 0))
+        return TrajectoryScorer.distance(trajectory.poses[-1], Pose(200, 145, 0))
 
     @staticmethod
     def distance(pose1, pose2):
@@ -98,18 +98,20 @@ class TrajectoryScorer:
             vis_costmap = copy.deepcopy(self.costmap)
             for trajectory in trajectories:
                 trajectory.visualize(vis_costmap, (depth + 1)*50)
-            vis_costmap.display()
+            vis_costmap.display(close=True)
         prev_min_cost = -1
+
         for i in range(0, len(trajectories)):
             if num_best_traj == 0:
                 break
             min_cost_trajectory = min(trajectory_list, key=lambda t: t[0])
-            if math.fabs(prev_min_cost - min_cost_trajectory[0]) < 1000:
-                trajectory_list.remove(min_cost_trajectory)
-                continue
+            # if math.fabs(prev_min_cost - min_cost_trajectory[0]) < 1000:
+            #     trajectory_list.remove(min_cost_trajectory)
+            #     continue
 
             best_trajectories.append(min_cost_trajectory[1])
             num_best_traj -=1
             prev_min_cost = min_cost_trajectory[0]
             trajectory_list.remove(min_cost_trajectory)
+
         return best_trajectories
